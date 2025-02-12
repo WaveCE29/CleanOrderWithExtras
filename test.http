@@ -1,0 +1,104 @@
+#### 1 
+POST http://127.0.0.1:8080/clean
+Content-Type: application/json
+
+[
+   {
+      "no": 1,
+      "platformProductId": "FG0A-CLEAR-IPHONE16PROMAX",
+      "qty": 2,
+      "unitPrice": 50,
+      "totalPrice": 100
+   }
+]
+
+#### 2
+POST http://127.0.0.1:8080/clean
+Content-Type: application/json
+
+[
+  {
+    "no": 1,
+    "platformProductId": "x2-3&FG0A-CLEAR-IPHONE16PROMAX",
+    "qty": 2,
+    "unitPrice": 50,
+    "totalPrice": 100
+  }
+]
+
+#### 3
+POST http://127.0.0.1:8080/clean
+Content-Type: application/json
+
+[
+  {
+    "no": 1,
+    "platformProductId": "x2-3&FG0A-MATTE-IPHONE16PROMAX*3",
+    "qty": 1,
+    "unitPrice": 90,
+    "totalPrice": 90
+  }
+]
+
+#### 4
+POST http://127.0.0.1:8080/clean
+Content-Type: application/json
+
+[
+  {
+    "no": 1,
+    "platformProductId": "FG0A-CLEAR-OPPOA3/%20xFG0A-CLEAR-OPPOA3-B",
+    "qty": 1,
+    "unitPrice": 80,
+    "totalPrice": 80
+  }
+]
+
+
+#### 5
+POST http://127.0.0.1:8080/clean
+Content-Type: application/json
+[
+  {
+    "no": 1,
+    "platformProductId": "FG0A-CLEAR-OPPOA3/%20xFG0A-CLEAR-OPPOA3-B/FG0A-MATTE-OPPOA3",
+    "qty": 1,
+    "unitPrice": 120,
+    "totalPrice": 120
+  }
+]
+
+#### 6
+POST http://127.0.0.1:8080/clean
+Content-Type: application/json
+
+[
+  {
+    "no": 1,
+    "platformProductId": "--FG0A-CLEAR-OPPOA3*2/FG0A-MATTE-OPPOA3",
+    "qty": 1,
+    "unitPrice": 120,
+    "totalPrice": 120
+  }
+]
+
+#### 7
+POST http://127.0.0.1:8080/clean
+Content-Type: application/json
+
+[
+  {
+    "no": 1,
+    "platformProductId": "--FG0A-CLEAR-OPPOA3*2/FG0A-MATTE-OPPOA3*2",
+    "qty": 1,
+    "unitPrice": 160,
+    "totalPrice": 160
+  },
+  {
+    "no": 2,
+    "platformProductId": "FG0A-PRIVACY-IPHONE16PROMAX",
+    "qty": 1,
+    "unitPrice": 50,
+    "totalPrice": 50
+  }
+]

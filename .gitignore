@@ -1,0 +1,38 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of the build process
+/build/
+/bin/
+
+# Dependency directories
+vendor/
+
+# Go specific
+*.log
+*.env
+*.sum
+*.db
+*.tmp
+*.cache
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs and debug files
+*.log
+
+# Test results
+*.coverprofile
