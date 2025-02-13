@@ -240,3 +240,60 @@ func TestCleanOrderWithMultipleProductsAndSplitFormats(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
+
+func TestCleanOrderWithComplexSplitAndQuantities(t *testing.T) {
+	input := models.InputOrder{
+
+		No:                1,
+		PlatformProductId: "--FG0A-CLEAR-OPPOA3*2/FG0A-MATTE-OPPOA3",
+		Qty:               1,
+		UnitPrice:         120,
+		TotalPrice:        120,
+	}
+
+	expected := []models.CleanedOrder{
+		{
+			No:         1,
+			ProductId:  "FG0A-CLEAR-OPPOA3",
+			MaterialId: "FG0A-CLEAR",
+			ModelId:    "OPPOA3",
+			Qty:        2,
+			UnitPrice:  40,
+			TotalPrice: 80,
+		},
+		{
+			No:         2,
+			ProductId:  "FG0A-MATTE-OPPOA3",
+			MaterialId: "FG0A-MATTE",
+			ModelId:    "OPPOA3",
+			Qty:        1,
+			UnitPrice:  40,
+			TotalPrice: 40,
+		},
+		{
+			No:         3,
+			ProductId:  "WIPING-CLOTH",
+			Qty:        3,
+			UnitPrice:  0,
+			TotalPrice: 0,
+		},
+		{
+			No:         4,
+			ProductId:  "CLEAR-CLEANNER",
+			Qty:        2,
+			UnitPrice:  0,
+			TotalPrice: 0,
+		},
+		{
+			No:         5,
+			ProductId:  "MATTE-CLEANNER",
+			Qty:        1,
+			UnitPrice:  0,
+			TotalPrice: 0,
+		},
+	}
+
+	result, err := CleanOrder(input)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
+}
