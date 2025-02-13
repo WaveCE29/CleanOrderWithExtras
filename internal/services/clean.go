@@ -53,9 +53,6 @@ func CleanOrder(input models.InputOrder) ([]models.CleanedOrder, error) {
 		totalQty += adjustedQty
 	}
 
-	// textureParts := strings.Split(cleanedOrders[0].MaterialId, "-")
-	// textureId := textureParts[len(textureParts)-1]
-
 	complementaryOrders = []models.CleanedOrder{
 		{
 			No:         input.No + len(products),
@@ -65,10 +62,9 @@ func CleanOrder(input models.InputOrder) ([]models.CleanedOrder, error) {
 			TotalPrice: 0,
 		},
 	}
-	// Map to track unique texture IDs and their counts
+
 	textureCount := make(map[string]int)
 
-	// Loop through cleanedOrders to find all unique textures and their counts
 	for _, order := range cleanedOrders {
 		if order.MaterialId != "" {
 			textureParts := strings.Split(order.MaterialId, "-")
@@ -78,7 +74,6 @@ func CleanOrder(input models.InputOrder) ([]models.CleanedOrder, error) {
 	}
 
 	if len(textureCount) > 1 {
-		// Add complementary cleaner orders for each unique texture
 		for textureId, count := range textureCount {
 			complementaryOrders = append(complementaryOrders, models.CleanedOrder{
 				No:         input.No + len(products) + len(complementaryOrders),
@@ -89,25 +84,15 @@ func CleanOrder(input models.InputOrder) ([]models.CleanedOrder, error) {
 			})
 		}
 	} else {
-		// Add complementary cleaner orders for the single texture
 		textureParts := strings.Split(cleanedOrders[0].MaterialId, "-")
 		textureId := textureParts[len(textureParts)-1]
-		complementaryOrders = []models.CleanedOrder{
-			{
-				No:         input.No + len(products),
-				ProductId:  "WIPING-CLOTH",
-				Qty:        totalQty,
-				UnitPrice:  0,
-				TotalPrice: 0,
-			},
-			{
-				No:         input.No + len(products) + 1,
-				ProductId:  textureId + "-CLEANNER",
-				Qty:        totalQty,
-				UnitPrice:  0,
-				TotalPrice: 0,
-			},
-		}
+		complementaryOrders = append(complementaryOrders, models.CleanedOrder{
+			No:         input.No + len(products) + 1,
+			ProductId:  textureId + "-CLEANNER",
+			Qty:        totalQty,
+			UnitPrice:  0,
+			TotalPrice: 0,
+		})
 	}
 
 	cleanedOrders = append(cleanedOrders, complementaryOrders...)
