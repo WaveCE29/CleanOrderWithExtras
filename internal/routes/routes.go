@@ -14,13 +14,11 @@ func SetupRoutes(app *fiber.App) {
 		}
 
 		var cleanedOrders []models.CleanedOrder
-		for _, order := range input {
-			processedOrders, err := services.CleanOrder(order)
-			if err != nil {
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-			}
-			cleanedOrders = append(cleanedOrders, processedOrders...)
+		processedOrders, err := services.CleanOrder(input)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
+		cleanedOrders = append(cleanedOrders, processedOrders...)
 
 		return c.JSON(cleanedOrders)
 	})

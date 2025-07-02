@@ -2,100 +2,179 @@ package services
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
-	"strconv"
-
 	"github.com/WaveCE29/custom-film-cleaner/internal/models"
-	"github.com/pkg/errors"
 )
 
-func CleanOrder(input models.InputOrder) ([]models.CleanedOrder, error) {
-	normalizedProductId := strings.Trim(input.PlatformProductId, "- %")
-
-	productList := regexp.MustCompile(`/[%0-9A-Za-z]*x|/`)
-	products := productList.Split(normalizedProductId, -1)
-
+func CleanOrder(inputOrders []models.InputOrder) ([]models.CleanedOrder, error) {
 	var cleanedOrders []models.CleanedOrder
-	var complementaryOrders []models.CleanedOrder
-	var totalQty int
+	orderNo := 1
 
-	productRegex := regexp.MustCompile(`([A-Z0-9]+-[A-Z]+)-([A-Z0-9\-]+)(\*([0-9]+))?`)
+	// Track materials for complementary items
+	materialCounts := make(map[string]int)
 
-	for i, product := range products {
-		matches := productRegex.FindStringSubmatch(product)
-		if len(matches) == 0 {
-			return nil, errors.New("invalid PlatformProductId format")
+	// Process each input order
+	for _, order := range inputOrders {
+		// Parse the platform product ID
+		products := parseProductId(order.PlatformProductId)
+
+		if len(products) == 0 {
+			continue
 		}
 
-		materialId := matches[1]
-		modelId := matches[2]
-		multiplier := 1
-		if len(matches) > 4 && matches[4] != "" {
-			multiplier, _ = strconv.Atoi(matches[4])
+		// Calculate total quantity of all products in this order
+		totalProductQty := 0
+		for _, product := range products {
+			totalProductQty += product.Qty
 		}
 
-		adjustedQty := input.Qty * multiplier
-		adjustedUnitPrice := input.UnitPrice / len(products) / multiplier
-		adjustedTotalPrice := input.TotalPrice / len(products)
-
-		cleanedOrder := models.CleanedOrder{
-			No:         input.No + i,
-			ProductId:  materialId + "-" + modelId,
-			MaterialId: materialId,
-			ModelId:    modelId,
-			Qty:        adjustedQty,
-			UnitPrice:  adjustedUnitPrice,
-			TotalPrice: adjustedTotalPrice,
+		// Calculate unit price per product
+		var unitPrice float64
+		if order.UnitPrice > 0 {
+			// If we have multiple products, divide the unit price
+			if len(products) > 1 {
+				unitPrice = order.UnitPrice / float64(len(products))
+			} else {
+				unitPrice = order.UnitPrice / float64(totalProductQty)
+			}
+		} else if order.TotalPrice > 0 {
+			// Calculate from total price
+			unitPrice = order.TotalPrice / float64(totalProductQty)
 		}
 
-		cleanedOrders = append(cleanedOrders, cleanedOrder)
-		totalQty += adjustedQty
+		// Add main products
+		for _, product := range products {
+			materialId, modelId := parseProductComponents(product.Id)
+
+			productQty := product.Qty * order.Qty
+			productTotal := unitPrice * float64(productQty)
+
+			cleanedOrder := models.CleanedOrder{
+				No:         orderNo,
+				ProductId:  product.Id,
+				MaterialId: materialId,
+				ModelId:    modelId,
+				Qty:        productQty,
+				UnitPrice:  unitPrice,
+				TotalPrice: productTotal,
+			}
+
+			cleanedOrders = append(cleanedOrders, cleanedOrder)
+			orderNo++
+
+			// Track material counts for complementary items
+			if materialId != "" {
+				materialCounts[materialId] += productQty
+			}
+		}
 	}
 
-	complementaryOrders = []models.CleanedOrder{
-		{
-			No:         input.No + len(products),
-			ProductId:  "WIPING-CLOTH",
-			Qty:        totalQty,
-			UnitPrice:  0,
-			TotalPrice: 0,
-		},
-	}
+	// Add complementary items
+	totalWipingCloth := 0
 
-	textureCount := make(map[string]int)
-
+	// Calculate wiping cloth quantity (sum of all main products)
 	for _, order := range cleanedOrders {
 		if order.MaterialId != "" {
-			textureParts := strings.Split(order.MaterialId, "-")
-			textureId := textureParts[len(textureParts)-1]
-			textureCount[textureId]++
+			totalWipingCloth += order.Qty
 		}
 	}
 
-	if len(textureCount) > 1 {
-		for textureId, count := range textureCount {
-			complementaryOrders = append(complementaryOrders, models.CleanedOrder{
-				No:         input.No + len(products) + len(complementaryOrders),
-				ProductId:  textureId + "-CLEANNER",
-				Qty:        count,
-				UnitPrice:  0,
-				TotalPrice: 0,
-			})
-		}
-	} else {
-		textureParts := strings.Split(cleanedOrders[0].MaterialId, "-")
-		textureId := textureParts[len(textureParts)-1]
-		complementaryOrders = append(complementaryOrders, models.CleanedOrder{
-			No:         input.No + len(products) + 1,
-			ProductId:  textureId + "-CLEANNER",
-			Qty:        totalQty,
+	// Add wiping cloth
+	if totalWipingCloth > 0 {
+		cleanedOrders = append(cleanedOrders, models.CleanedOrder{
+			No:         orderNo,
+			ProductId:  "WIPING-CLOTH",
+			Qty:        totalWipingCloth,
 			UnitPrice:  0,
 			TotalPrice: 0,
 		})
+		orderNo++
 	}
 
-	cleanedOrders = append(cleanedOrders, complementaryOrders...)
+	// Add cleaners for each material type
+	for material, qty := range materialCounts {
+		// Extract just the material name (remove FG0A- prefix)
+		materialName := strings.Replace(material, "FG0A-", "", 1)
+		cleanerName := materialName + "-CLEANNER"
+
+		cleanedOrders = append(cleanedOrders, models.CleanedOrder{
+			No:         orderNo,
+			ProductId:  cleanerName,
+			Qty:        qty,
+			UnitPrice:  0,
+			TotalPrice: 0,
+		})
+		orderNo++
+	}
 
 	return cleanedOrders, nil
+}
+
+// Product represents a parsed product with quantity
+type Product struct {
+	Id  string
+	Qty int
+}
+
+// parseProductId parses the platform product ID and returns individual products
+func parseProductId(productId string) []Product {
+	var products []Product
+
+	// Remove leading special characters and clean the string
+	cleanId := regexp.MustCompile(`^[^A-Z]*`).ReplaceAllString(productId, "")
+
+	// Handle different splitting patterns
+	// Split by: /, /%20x, /...x patterns
+	parts := regexp.MustCompile(`/\s*%20\s*x|/%20x|/`).Split(cleanId, -1)
+
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		// Clean each part
+		part = strings.TrimSpace(part)
+		part = regexp.MustCompile(`^[^A-Z]*`).ReplaceAllString(part, "")
+
+		if part == "" {
+			continue
+		}
+
+		// Check for multiplier pattern (*number)
+		qty := 1
+		multiplierRegex := regexp.MustCompile(`\*(\d+)$`)
+		if matches := multiplierRegex.FindStringSubmatch(part); len(matches) > 1 {
+			if parsedQty, err := strconv.Atoi(matches[1]); err == nil {
+				qty = parsedQty
+			}
+			// Remove the multiplier from the product ID
+			part = multiplierRegex.ReplaceAllString(part, "")
+		}
+
+		// Only add if it starts with a capital letter (valid product format)
+		if part != "" && regexp.MustCompile(`^[A-Z]`).MatchString(part) {
+			products = append(products, Product{
+				Id:  part,
+				Qty: qty,
+			})
+		}
+	}
+
+	return products
+}
+
+// parseProductComponents extracts material and model from product ID
+func parseProductComponents(productId string) (string, string) {
+	// Pattern: FG0A-MATERIAL-MODEL
+	parts := strings.Split(productId, "-")
+
+	if len(parts) >= 3 && parts[0] == "FG0A" {
+		material := parts[0] + "-" + parts[1] // FG0A-CLEAR, FG0A-MATTE, etc.
+		model := strings.Join(parts[2:], "-") // IPHONE16PROMAX, OPPOA3, etc.
+		return material, model
+	}
+
+	return "", ""
 }

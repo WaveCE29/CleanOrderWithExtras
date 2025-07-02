@@ -8,12 +8,13 @@ import (
 )
 
 func TestCleanOrderWithComplementaryItems(t *testing.T) {
-	input := models.InputOrder{
+	input := []models.InputOrder{{
 		No:                1,
 		PlatformProductId: "FG0A-CLEAR-IPHONE16PROMAX",
 		Qty:               2,
 		UnitPrice:         50,
 		TotalPrice:        100,
+	},
 	}
 
 	expected := []models.CleanedOrder{
@@ -49,12 +50,13 @@ func TestCleanOrderWithComplementaryItems(t *testing.T) {
 
 func TestCleanOrderWithSpecialChars(t *testing.T) {
 
-	input := models.InputOrder{
+	input := []models.InputOrder{{
 		No:                1,
 		PlatformProductId: "x2-3&FG0A-CLEAR-IPHONE16PROMAX",
 		Qty:               2,
 		UnitPrice:         50,
 		TotalPrice:        100,
+	},
 	}
 
 	expected := []models.CleanedOrder{
@@ -89,12 +91,13 @@ func TestCleanOrderWithSpecialChars(t *testing.T) {
 }
 
 func TestCleanOrderWithMultiplier(t *testing.T) {
-	input := models.InputOrder{
+	input := []models.InputOrder{{
 		No:                1,
 		PlatformProductId: "x2-3&FG0A-MATTE-IPHONE16PROMAX*3",
 		Qty:               1,
 		UnitPrice:         90,
 		TotalPrice:        90,
+	},
 	}
 
 	expected := []models.CleanedOrder{
@@ -129,13 +132,13 @@ func TestCleanOrderWithMultiplier(t *testing.T) {
 }
 
 func TestCleanOrderWithSpecialCharsAndSplitProducts(t *testing.T) {
-	input := models.InputOrder{
+	input := []models.InputOrder{{
 		No:                1,
 		PlatformProductId: "FG0A-CLEAR-OPPOA3/%20xFG0A-CLEAR-OPPOA3-B",
 		Qty:               1,
 		UnitPrice:         80,
 		TotalPrice:        80,
-	}
+	}}
 	expected := []models.CleanedOrder{
 		{
 			No:         1,
@@ -177,12 +180,13 @@ func TestCleanOrderWithSpecialCharsAndSplitProducts(t *testing.T) {
 }
 
 func TestCleanOrderWithMultipleProductsAndSplitFormats(t *testing.T) {
-	input := models.InputOrder{
+	input := []models.InputOrder{{
 		No:                1,
 		PlatformProductId: "FG0A-CLEAR-OPPOA3/%20xFG0A-CLEAR-OPPOA3-B/FG0A-MATTE-OPPOA3",
 		Qty:               1,
 		UnitPrice:         120,
 		TotalPrice:        120,
+	},
 	}
 
 	expected := []models.CleanedOrder{
@@ -242,13 +246,14 @@ func TestCleanOrderWithMultipleProductsAndSplitFormats(t *testing.T) {
 }
 
 func TestCleanOrderWithComplexSplitAndQuantities(t *testing.T) {
-	input := models.InputOrder{
+	input := []models.InputOrder{{
 
 		No:                1,
 		PlatformProductId: "--FG0A-CLEAR-OPPOA3*2/FG0A-MATTE-OPPOA3",
 		Qty:               1,
 		UnitPrice:         120,
 		TotalPrice:        120,
+	},
 	}
 
 	expected := []models.CleanedOrder{
@@ -258,8 +263,8 @@ func TestCleanOrderWithComplexSplitAndQuantities(t *testing.T) {
 			MaterialId: "FG0A-CLEAR",
 			ModelId:    "OPPOA3",
 			Qty:        2,
-			UnitPrice:  40,
-			TotalPrice: 80,
+			UnitPrice:  40.00,
+			TotalPrice: 80.00,
 		},
 		{
 			No:         2,
@@ -267,29 +272,29 @@ func TestCleanOrderWithComplexSplitAndQuantities(t *testing.T) {
 			MaterialId: "FG0A-MATTE",
 			ModelId:    "OPPOA3",
 			Qty:        1,
-			UnitPrice:  40,
-			TotalPrice: 40,
+			UnitPrice:  40.00,
+			TotalPrice: 40.00,
 		},
 		{
 			No:         3,
 			ProductId:  "WIPING-CLOTH",
 			Qty:        3,
-			UnitPrice:  0,
-			TotalPrice: 0,
+			UnitPrice:  0.00,
+			TotalPrice: 0.00,
 		},
 		{
 			No:         4,
 			ProductId:  "CLEAR-CLEANNER",
 			Qty:        2,
-			UnitPrice:  0,
-			TotalPrice: 0,
+			UnitPrice:  0.00,
+			TotalPrice: 0.00,
 		},
 		{
 			No:         5,
 			ProductId:  "MATTE-CLEANNER",
 			Qty:        1,
-			UnitPrice:  0,
-			TotalPrice: 0,
+			UnitPrice:  0.00,
+			TotalPrice: 0.00,
 		},
 	}
 
@@ -325,12 +330,7 @@ func TestCleanOrderAllCase(t *testing.T) {
 		{No: 7, ProductId: "PRIVACY-CLEANNER", Qty: 1, UnitPrice: 0, TotalPrice: 0},
 	}
 
-	var actualOrders []models.CleanedOrder
-	for _, input := range inputOrders {
-		cleanedOrders, err := CleanOrder(input)
-		assert.NoError(t, err, "CleanOrder should not return an error")
-		actualOrders = append(actualOrders, cleanedOrders...)
-	}
-
+	actualOrders, err := CleanOrder(inputOrders)
+	assert.NoError(t, err, "CleanOrder should not return an error")
 	assert.Equal(t, expectedOrders, actualOrders, "CleanOrder output does not match expected")
 }
