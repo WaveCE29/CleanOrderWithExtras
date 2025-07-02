@@ -33,17 +33,12 @@ func CleanOrder(inputOrders []models.InputOrder) ([]models.CleanedOrder, error) 
 		// Calculate unit price per product
 		var unitPrice float64
 		if order.UnitPrice > 0 {
-			// If we have multiple products, divide the unit price
-			if len(products) > 1 {
-				unitPrice = order.UnitPrice / float64(len(products))
-			} else {
-				unitPrice = order.UnitPrice / float64(totalProductQty)
-			}
+			// Use the provided unit price divided by total quantity
+			unitPrice = order.UnitPrice / float64(totalProductQty)
 		} else if order.TotalPrice > 0 {
-			// Calculate from total price
+			// Calculate from total price divided by total quantity
 			unitPrice = order.TotalPrice / float64(totalProductQty)
 		}
-
 		// Add main products
 		for _, product := range products {
 			materialId, modelId := parseProductComponents(product.Id)
