@@ -2,6 +2,7 @@ package services
 
 import (
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -30,7 +31,7 @@ func CleanOrder(inputOrders []models.InputOrder) ([]models.CleanedOrder, error) 
 			totalProductQty += product.Qty
 		}
 
-		// Calculate unit price per product
+		// Calculate unit price per item (not per product type)
 		var unitPrice float64
 		if order.UnitPrice > 0 {
 			// Use the provided unit price divided by total quantity
@@ -39,6 +40,7 @@ func CleanOrder(inputOrders []models.InputOrder) ([]models.CleanedOrder, error) 
 			// Calculate from total price divided by total quantity
 			unitPrice = order.TotalPrice / float64(totalProductQty)
 		}
+
 		// Add main products
 		for _, product := range products {
 			materialId, modelId := parseProductComponents(product.Id)
@@ -88,8 +90,15 @@ func CleanOrder(inputOrders []models.InputOrder) ([]models.CleanedOrder, error) 
 		orderNo++
 	}
 
-	// Add cleaners for each material type
-	for material, qty := range materialCounts {
+	// Add cleaners for each material type (sorted for deterministic order)
+	var materials []string
+	for material := range materialCounts {
+		materials = append(materials, material)
+	}
+	sort.Strings(materials)
+
+	for _, material := range materials {
+		qty := materialCounts[material]
 		// Extract just the material name (remove FG0A- prefix)
 		materialName := strings.Replace(material, "FG0A-", "", 1)
 		cleanerName := materialName + "-CLEANNER"
